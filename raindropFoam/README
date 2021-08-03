@@ -1,0 +1,8 @@
+This is the version2 solver, which embed the external control codes inside interFoam solver to run simulation simultaneously.
+
+THe current result and problems:
+Even the raindrop accelerates and shows wake. There’s unphysical oscillations. I think there are two main reasons:
+
+1 Some internal variables such as face flux impacts the computation of next time step, even they are not documented at all. For this problem, I am trying to reevaluate all relavalent face properties. I stuck here.
+
+2 The patch connection between different processors. Although I use the solver function to correct boundary field, the details of this function is still unclear to me. The physical boundary is fine. The problem is the processor boundary (In parallel, the domain is cut to many pieces and each processor handles one piece. The processor boundary is the face between two neighboring processors. I don’t know how it works so far. The parallel is another big project of OpenFOAM.
