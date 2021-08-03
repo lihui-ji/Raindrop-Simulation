@@ -1,9 +1,9 @@
-Codes developed: 
+Codes developed (version 1): 
 
 The output-input coupling between interFoam and external control codes (rearrange output files as input of next timestep after certain runtime).
 
 The raindrop free falling and collision have been tested with the codes in 2D cases with four processors.
 
-Codes under developing:
+Codes under developing (version 2):
 
 The simultaneous coupling to move properties of interFoam to realize Lagrangian tracking.
