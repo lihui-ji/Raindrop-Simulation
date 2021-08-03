@@ -1,0 +1,166 @@
+#!/bin/python2.7
+# coding=utf-8
+import os
+from raindropfuns import writecontrolDict
+from raindropfuns import writeblockMeshDict
+from raindropfuns import writesetFieldsDict
+# writesetFieldsDict(dropdiameter,dropcenterx,dropcentery)
+from raindropfuns import slidevertical
+from raindropfuns import dropinfo
+from raindropfuns import slidehorizontal
+from raindropfuns import prep_processor01
+from raindropfuns import mergeInit
+from raindropfuns import mergeInit
+from raindropfuns import downScale
+from raindropfuns import pieceInfo
+from raindropfuns import readFoamScalarOutput
+from raindropfuns import mergeTwoPieces
+from raindropfuns import readFoamVectorOutput
+from raindropfuns import writeScalar
+from raindropfuns import writeVector
+from raindropfuns import shiftInit
+from raindropfuns import shiftOnePiece
+from raindropfuns import writesetFieldsDict
+from raindropfuns import dropab
+
+if_dynamic=1
+shift_ratio=0
+starttime=0
+writeInterval=0.0001
+exportInterval=0.0001
+pressure=80000
+warmperiod=0.0001
+#cyclenum=int((endTime-startTime)/writeInterval)
+m_grid=400
+n_grid=m_grid*2
+pn_grid=n_grid/4
+domainwidth=0.01
+#d_top=0.002
+#d_bot=0.0005
+threShold=0.9
+U_new_mag,U_old_mag=10**(-20),0
+timestamp=0
+flag_terminate=0
+control_methods=['tolerance','endtime']
+control_parameters=[10**(-2),0.01]
+control_option=control_methods[1]
+os.system('./preprocess')
+os.system('cp system/controlDict.orig system/controlDict.txt')
+prep_processor01(domainwidth,m_grid,n_grid)
+drop_dire='../slices/'
+d2_drop_path='do20m400d2U4.12'
+d1_drop_path='do15m400d1.5U0.77'
+d2, d1 = 2, 1.5
+downScaleFactor = d2/d1
+
+os.system("cp -r "+drop_dire+d2_drop_path +" .")
+os.system("cp -r "+drop_dire+d1_drop_path +" .")
+m_2=400
+m_1=400
+writeblockMeshDict(domainwidth,m_grid,n_grid)
+os.system('blockMesh > log.blockMesh')
+if if_dynamic==1:
+        a_top=dropab(d2_drop_path,m_2,m_2*2,domainwidth,threShold)[0]
+        a_bot=dropab(d1_drop_path,m_1,m_1*2,domainwidth/2,threShold)[0]
+        hor_adjust=int(shift_ratio*(a_top+a_bot)/2*float(m_grid)/float(domainwidth))
+        mergeInit(d2_drop_path,d1_drop_path,m_2,m_1,m_grid,downScaleFactor,threShold,pressure,hor_adjust,warmperiod,reverse=False)
+if if_dynamic==0:
+        a_top=dropab(d2_drop_path,200,400,domainwidth,threShold)[0]
+        a_bot=d_bot
+        hor_adjust=int(shift_ratio*(a_top+a_bot)/2*float(m_grid)/float(domainwidth))
+        shiftInit(d2_drop_path,m_2,m_2*2,m_grid,downScaleFactor,threShold,pressure,hor_adjust/2,warmperiod)
+        writesetFieldsDict(d_bot,domainwidth/2+shift_ratio*(a_top+a_bot)/4,domainwidth*(-1.2))
+        os.system('setFields > log.setFields')
+
+os.system('decomposePar > log.decomposePar')
+os.system('mkdir log droploc')
+os.system('mv log.* log')
+#os.system('foamToVTK')
+#exit()
+os.system('touch waterdropcenter.txt')
+with open('waterdropcenter.txt', 'a') as file:
+        if control_option=='tolerance':
+                file.write('m_grid='+str(m_grid)+' n_grid='+str(n_grid)+' threShold='+str(threShold)+' tolerance='+str(control_parameters[0])+\
+                        '\n'+'time/s nx ny dist_hor dist_ver alpha_water Ux(m/s) Uz(m/s) acceleration(m^2/s) convergence number angle\n')
+        if control_option=='endtime':
+                file.write('m_grid='+str(m_grid)+' n_grid='+str(n_grid)+' threShold='+str(threShold)+' endtime='+str(control_parameters[1])+'s'+\
+                        '\n'+'time/s nx ny dist_hor dist_ver alpha_water Ux(m/s) Uz(m/s) acceleration(m^2/s) convergence number angle\n')
+if_contact=0
+contact_angle=-1
+max_number=0
+while flag_terminate==0:
+        
+        t0 = round(starttime + writeInterval * timestamp,6)
+        t1 = round(starttime + writeInterval * (timestamp+1),6)
+        
+
+        if t1 % 1 < 0.1 * writeInterval:
+                t1=int(t1)
+
+        writecontrolDict(writeInterval,str(t0),str(t1))
+
+        os.system('./runParallel')
+        os.system('mv log.interFoam log/log.interFoam'+str(t0)+'to'+str(t1))
+        os.system('rm -f processor*/'+str(t1)+'/phi')
+        os.system('rm -f processor*/'+str(t1)+'/alphaPhi0.water')
+
+        with open('processor0/'+str(t1)+'/alpha.water', 'r') as file:
+                data = file.readlines()    
+        [awnx,awny,avgaw,Ux,Uz,number,angle]=dropinfo(str(t1),m_grid,pn_grid,0.5)
+        
+        if if_contact==0:
+                if angle!=-1:
+                        contact_angle=angle
+                        if_contact = 1
+        if if_contact==1:
+                max_number=max(max_number,number)
+
+        U_old_mag=U_new_mag
+        U_new_mag=abs(Uz)
+        a=(U_new_mag-U_old_mag)/writeInterval
+        convergence=abs((U_new_mag-U_old_mag)/U_old_mag)
+        logToPrint='from'+str(t0)+'to'+str(t1)+': convergence is '+str(convergence)
+        if if_contact == 1:
+                logToPrint = logToPrint + ' contact angle is ' + str(contact_angle) + ' maximum small drop number is ' + str(max_number)
+        print(logToPrint)
+        dist_hor=0
+
+        #if abs(awnx-(m_grid-1)/2)<m_grid/10:
+        #        dist_hor=0
+        #else:
+        #        dist_hor=int(awnx-(m_grid-1)/2)
+        #        slidehorizontal(str(t1),dist_hor,int(m_grid),int(pn_grid),pressure)
+
+        if awny>pn_grid:
+                dist_ver=0
+        else:
+                dist_ver=-n_grid/2
+                slidevertical(writeInterval,str(t1),pressure)
+
+        with open('waterdropcenter.txt', 'a') as file:
+                file.write(str(t1)+ ' '+str(awnx)+' '+str(awny)+' '+str(dist_hor)+' '+str(dist_ver)+' '+str(avgaw)+ ' '+str(Ux)+' '+str(Uz)+' '+str(a)+' '+str(convergence)+' '+str(number)+' '+str(angle)+'\n')
+       
+        if t0 % exportInterval>0.1*writeInterval and t0 % exportInterval<exportInterval - 0.1 * writeInterval: 
+        #and t0 > 1.1*writeInterval:
+                os.system('rm -rf processor0/'+str(t0))
+                os.system('rm -rf processor1/'+str(t0))
+                os.system('rm -rf processor2/'+str(t0))
+                os.system('rm -rf processor3/'+str(t0))
+
+        timestamp=timestamp+1
+        if control_option=='tolerance':
+                if convergence<control_parameters[0]:
+                        flag_terminate=1
+        if control_option=='endtime':
+                if t1>=control_parameters[1]:
+                        flag_terminate=1
+os.system('termlog.txt')
+with open('termlog.txt', 'a') as file:
+        file.write(' contact angle is ' + str(contact_angle) + ' maximum small drop number is ' + str(max_number))
+os.system('rm -rf processor*/'+str(writeInterval))
+os.system('reconstructPar>log.reconstructPar')
+os.system('foamToVTK>log.foamToVTK')
+#os.system('rm system/controlDict.txt')
+os.system('mv log.* log/')
+#os.system('rm -rf processor*')
+print (timestamp)
