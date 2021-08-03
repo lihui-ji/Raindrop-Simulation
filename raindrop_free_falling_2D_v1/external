@@ -1,0 +1,107 @@
+#!/bin/python2.7
+import os
+from raindropslidingmeshfuns import writecontrolDict
+from raindropslidingmeshfuns import writeblockMeshDict
+from raindropslidingmeshfuns import writesetFieldsDict
+from raindropslidingmeshfuns import slidevertical
+from raindropslidingmeshfuns import dropinfo
+from raindropslidingmeshfuns import slidehorizontal
+
+starttime=0
+writeInterval=0.0001
+exportInterval=0.05
+pressure=80000
+#cyclenum=int((endTime-startTime)/writeInterval)
+m_grid=400
+n_grid=800
+pn_grid=n_grid/4
+domainwidth=0.03
+dropdiameter=0.003
+threshold=0.9
+U_new_mag,U_old_mag=10**(-20),0
+timestamp=0
+flag_terminate=0
+control_methods=['tolerance','endtime']
+control_parameters=[10**(-2),5]
+control_option=control_methods[1]
+
+os.system('./preprocess')
+writeblockMeshDict(domainwidth,m_grid,n_grid)
+writesetFieldsDict(domainwidth,dropdiameter)
+os.system('cp system/controlDict.orig system/controlDict.txt')
+os.system('blockMesh > log.blockMesh')
+os.system('setFields > log.setFields')
+os.system('decomposePar > log.decomposePar')
+os.system('mkdir log droploc')
+os.system('mv log.* log')
+
+os.system('touch waterdropcenter.txt')
+with open('waterdropcenter.txt', 'a') as file:
+        if control_option=='tolerance':
+                file.write('m_grid='+str(m_grid)+' n_grid='+str(n_grid)+' threshold='+str(threshold)+' tolerance='+str(control_parameters[0])+\
+                        '\n'+'time/s nx ny dist_hor dist_ver alpha_water Ux(m/s) Uz(m/s) acceleration(m^2/s) convergence\n')
+        if control_option=='endtime':
+                file.write('m_grid='+str(m_grid)+' n_grid='+str(n_grid)+' threshold='+str(threshold)+' endtime='+str(control_parameters[1])+'s'+\
+                        '\n'+'time/s nx ny dist_hor dist_ver alpha_water Ux(m/s) Uz(m/s) acceleration(m^2/s) convergence\n')
+
+while flag_terminate==0:
+
+        t0 = round(starttime + writeInterval * timestamp,6)
+        t1 = round(starttime + writeInterval * (timestamp+1),6)
+        print('from'+str(t0)+'to'+str(t1))
+
+        if t1 % 1 < 0.1 * writeInterval:
+                t1=int(t1)
+
+        writecontrolDict(writeInterval,str(t0),str(t1))
+
+        os.system('./runParallel')
+        os.system('mv log.interFoam log/log.interFoam'+str(t0)+'to'+str(t1))
+        os.system('rm -f processor*/'+str(t1)+'/phi')
+        os.system('rm -f processor*/'+str(t1)+'/alphaPhi0.water')
+
+        with open('processor0/'+str(t1)+'/alpha.water', 'r') as file:
+                data = file.readlines()    
+        [awnx,awny,avgaw,Ux,Uz]=dropinfo(str(t1),m_grid,pn_grid,threshold)
+
+        U_old_mag=U_new_mag
+        U_new_mag=abs(Uz)
+        a=(U_new_mag-U_old_mag)/writeInterval
+        convergence=abs((U_new_mag-U_old_mag)/U_old_mag)
+        print('convergence is '+str(convergence))
+
+        if abs(awnx-(m_grid-1)/2)<m_grid/10:
+                dist_hor=0
+        else:
+                dist_hor=int(awnx-(m_grid-1)/2)
+                slidehorizontal(str(t1),dist_hor,int(m_grid),int(pn_grid),pressure)
+
+        if awny>pn_grid:
+                dist_ver=0
+        else:
+                dist_ver=-n_grid/2
+                slidevertical(writeInterval,str(t1),pressure)
+
+        with open('waterdropcenter.txt', 'a') as file:
+                file.write(str(t1)+ ' '+str(awnx)+' '+str(awny)+' '+str(dist_hor)+' '+str(dist_ver)+' '+str(avgaw)+ ' '+str(Ux)+' '+str(Uz)+' '+str(a)+' '+str(convergence)+'\n')
+       
+        if t0 % exportInterval>0.1*writeInterval and t0 % exportInterval<exportInterval - 0.1 * writeInterval and t0 > 1.1*writeInterval:
+                os.system('rm -rf processor0/'+str(t0))
+                os.system('rm -rf processor1/'+str(t0))
+                os.system('rm -rf processor2/'+str(t0))
+                os.system('rm -rf processor3/'+str(t0))
+
+        timestamp=timestamp+1
+        if control_option=='tolerance':
+                if convergence<control_parameters[0]:
+                        flag_terminate=1
+        if control_option=='endtime':
+                if t1>=control_parameters[1]:
+                        flag_terminate=1
+os.system('rm -rf processor*/'+str(writeInterval))
+os.system('reconstructPar>log.reconstructPar')
+os.system('foamToVTK>log.foamToVTK')
+#os.system('rm system/controlDict.txt')
+os.system('mv log.* log/')
+#os.system('rm -rf processor*')
+print (timestamp)
