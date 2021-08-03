@@ -1,0 +1,1 @@
+The external codes let the raindrop fall, calculate and document raindrop properties (water center, water volume, velocity, etc.) If the raindrop is too far away from center, move all properties back to center and fill the empty field with boundary conditions. (With assumption that the domain is large enough so that boundary will not be affected by drop anymore)
