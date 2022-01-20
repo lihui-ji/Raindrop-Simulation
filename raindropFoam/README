@@ -1,5 +1,3 @@
-README
-
 This is the version2 solver, which embed the external control codes inside interFoam solver to run simulation simultaneously.
 
 THe current result and problems:
