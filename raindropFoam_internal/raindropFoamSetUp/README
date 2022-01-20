@@ -1,0 +1,6 @@
+raindropFoam dynamically calculate the water phase center and move it to the domain center in each time step.
+
+To setup raindropFoam, modify setAll version number and run ./setAll
+
+For raindropFoam_v9 and raindropFoam_v8, there's only difference in raindropFoam.C
+v9 replaces "fvOptions.H" in v8 with "fvModels.H"
