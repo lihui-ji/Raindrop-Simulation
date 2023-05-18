@@ -4,10 +4,10 @@ The output-input coupling between interFoam and external control codes (rearrang
 
 The raindrop free falling and collision have been tested with the codes in 2D cases with four processors.
 
-Codes developed (version 2):
+Codes developed (version 2) raindropFoam:
 
 The simultaneous coupling to move properties of interFoam to realize Lagrangian tracking.
 
-Codes developed (version 3):
+*Codes developed (version 3) raindropFoam_internal (Active):
 
 Modify OpenFOAM classes to handle dynamicMesh simultaneously with much higher compatibility. 
