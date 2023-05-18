@@ -1,3 +1,5 @@
+The code is a multiphase solver for raindrop falling and interactions developed on OpenFOAM platform.
+
 Codes developed (version 1): 
 
 The output-input coupling between interFoam and external control codes (rearrange output files as input of next timestep after certain runtime).
