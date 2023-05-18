@@ -3,11 +3,15 @@
 List<DynamicList<label>> phaseCellIndList = getPhaseCellIndList(alpha1, threshold);
 volVectorField cellCenter = alpha1.mesh().C();
 List<DynamicList<vector>> waterCoordProcessorList = getFieldValueList<vector>(cellCenter, phaseCellIndList);
+scalarField cellVolume = alpha1.mesh().V();
+List<DynamicList<scalar>> waterVolProcessorList = getFieldValueList<scalar>(cellVolume, phaseCellIndList);
+
 DynamicList<vector> waterCoordList = mergeProcessorListValue (waterCoordProcessorList);
 vector raindropShape = getRaindropShape (waterCoordList);
 vector raindropCenter = getAverageListValue<vector>(waterCoordList);
 List<label> raindropCenterGlobalInd = getGlobalIndex (mesh, raindropCenter);
-scalar raindropVolume = raindropCenterGlobalInd.size() * mesh.V()[0];
+DynamicList<scalar> waterVolList = mergeProcessorListValue (waterVolProcessorList);
+scalar raindropVolume = getSumListValue<scalar>(waterVolList);
 
 vector raindropCenterVelocity = getGlobalIndexValue<vector> (U, raindropCenterGlobalInd);
 Info << "The raindrop volume is " << raindropVolume << endl

@@ -38,7 +38,7 @@ regions
 (
     cylinderToCell
     {
-        p1 (0.0 -0.1 -0.020); p2 (0.0 0.1 -0.020); radius 0.002;
+        p1 (0.00 -0.1 -0.020); p2 (0.00 0.1 -0.020); radius 0.002;
     fieldValues
     (
         volScalarFieldValue alpha.water 1

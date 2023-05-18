@@ -38,6 +38,9 @@ vector getInitialPhaseCenter ();
 // Get string of parameter value from given setting file and keyword
 string getSettingValue (string settingFilename, string parameterName);
 
+// Output string of parameter value and corresponding setting keyword to given setting file
+void writeSettingValue (string settingFileName, string parameterName, string value);
+
 // Preprocess raindrop file
 void preProcessRaindrop(scalar startTime);
 /*************************************************************************************************************************************/
@@ -108,6 +111,12 @@ T getAverageProcessorListValue(List<DynamicList<T>> &fieldValueList)
     }
     T averageProcessorListValue = fullList[0]-fullList[0];
     label fullListSize = fullList.size();
+    if (fullListSize==0)
+    {
+        FatalErrorInFunction
+                << "Gathered list is empty!"
+                << exit(FatalError);
+    }
     forAll(fullList, fullListInd)
     {
     	averageProcessorListValue += fullList[fullListInd]/fullListSize;
@@ -243,6 +252,35 @@ string getSettingValue (string settingFileName, string parameterName)
     FatalErrorInFunction << "Can not find parameter " << parameterName << abort(FatalError); 
     return line;
 }          
+
+void writeSettingValue (string settingFileName, string parameterName, string value)
+{
+    std::string line;
+    std::string temp;
+    std::ifstream myfile (settingFileName);
+    if (myfile.is_open())
+    {
+        while ( std::getline (myfile,line) )
+        {
+            if (line.find(parameterName)!=0)
+            {
+                temp.append(line.append("\n"));
+            }
+        }
+        temp.append(parameterName.append("\t").append(value).append(";\n"));
+        myfile.close();
+    }
+    else
+    {
+        FatalErrorInFunction << "Can not open file." << abort(FatalError);                       
+    }
+
+    std::ofstream out(settingFileName);
+    out << temp;
+    out.close();
+    
+}  
+
 
 void preProcessRaindrop(scalar startTime)
 {

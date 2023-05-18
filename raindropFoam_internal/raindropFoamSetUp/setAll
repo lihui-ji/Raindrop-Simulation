@@ -2,27 +2,30 @@
 cd ${0%/*} || exit 1    # Run from this director
 
 version=9
-rm -rf $HOME/OpenFOAM-$version/src/dynamicMesh/motionSolvers/displacement/solidBody/solidBodyMotionFunctions/dynamicMotion
-cp -r dynamicMotion $HOME/OpenFOAM-$version/src/dynamicMesh/motionSolvers/displacement/solidBody/solidBodyMotionFunctions
+#dir_parent=$HOME/Programs/OpenFOAM/
+dir_parent=/home/lihuiji2
 
-rm -rf $HOME/OpenFOAM-$version/applications/solvers/multiphase/raindropFoam
-cp -r raindropFoam_v$version $HOME/OpenFOAM-$version/applications/solvers/multiphase/raindropFoam
+rm -rf $dir_parent/OpenFOAM-$version/src/dynamicMesh/motionSolvers/displacement/solidBody/solidBodyMotionFunctions/dynamicMotion
+cp -r dynamicMotion $dir_parent/OpenFOAM-$version/src/dynamicMesh/motionSolvers/displacement/solidBody/solidBodyMotionFunctions
 
-cp dynamicFvMesh.H $HOME/OpenFOAM-$version/src/dynamicFvMesh/dynamicFvMesh/dynamicFvMesh.H
+rm -rf $dir_parent/OpenFOAM-$version/applications/solvers/multiphase/raindropFoam
+cp -r raindropFoam_v$version $dir_parent/OpenFOAM-$version/applications/solvers/multiphase/raindropFoam
 
-cp dynamicMotionSolverFvMesh.H $HOME/OpenFOAM-$version/src/dynamicFvMesh/dynamicMotionSolverFvMesh/dynamicMotionSolverFvMesh.H
-cp dynamicMotionSolverFvMesh.C $HOME/OpenFOAM-$version/src/dynamicFvMesh/dynamicMotionSolverFvMesh/dynamicMotionSolverFvMesh.C
+cp dynamicFvMesh.H $dir_parent/OpenFOAM-$version/src/dynamicFvMesh/dynamicFvMesh/dynamicFvMesh.H
 
-cp motionSolver.C $HOME/OpenFOAM-$version/src/dynamicMesh/motionSolvers/motionSolver/motionSolver.C
-cp motionSolver.H $HOME/OpenFOAM-$version/src/dynamicMesh/motionSolvers/motionSolver/motionSolver.H
+cp dynamicMotionSolverFvMesh.H $dir_parent/OpenFOAM-$version/src/dynamicFvMesh/dynamicMotionSolverFvMesh/dynamicMotionSolverFvMesh.H
+cp dynamicMotionSolverFvMesh.C $dir_parent/OpenFOAM-$version/src/dynamicFvMesh/dynamicMotionSolverFvMesh/dynamicMotionSolverFvMesh.C
+
+cp motionSolver.C $dir_parent/OpenFOAM-$version/src/dynamicMesh/motionSolvers/motionSolver/motionSolver.C
+cp motionSolver.H $dir_parent/OpenFOAM-$version/src/dynamicMesh/motionSolvers/motionSolver/motionSolver.H
     
-cp solidBodyMotionSolver.H $HOME/OpenFOAM-$version/src/dynamicMesh/motionSolvers/displacement/solidBody/solidBodyMotionSolver/solidBodyMotionSolver.H
-cp solidBodyMotionSolver.C $HOME/OpenFOAM-$version/src/dynamicMesh/motionSolvers/displacement/solidBody/solidBodyMotionSolver/solidBodyMotionSolver.C
+cp solidBodyMotionSolver.H $dir_parent/OpenFOAM-$version/src/dynamicMesh/motionSolvers/displacement/solidBody/solidBodyMotionSolver/solidBodyMotionSolver.H
+cp solidBodyMotionSolver.C $dir_parent/OpenFOAM-$version/src/dynamicMesh/motionSolvers/displacement/solidBody/solidBodyMotionSolver/solidBodyMotionSolver.C
 
-cp solidBodyMotionFunction.H $HOME/OpenFOAM-$version/src/dynamicMesh/motionSolvers/displacement/solidBody/solidBodyMotionFunctions/solidBodyMotionFunction/solidBodyMotionFunction.H
+cp solidBodyMotionFunction.H $dir_parent/OpenFOAM-$version/src/dynamicMesh/motionSolvers/displacement/solidBody/solidBodyMotionFunctions/solidBodyMotionFunction/solidBodyMotionFunction.H
 
-cp dynamicMeshFiles $HOME/OpenFOAM-$version/src/dynamicMesh/Make/files
+cp dynamicMeshFiles $dir_parent/OpenFOAM-$version/src/dynamicMesh/Make/files
 
-cd $HOME/OpenFOAM-9
+cd $dir_parent/OpenFOAM-9
 source etc/bashrc
 ./Allwmake -j > log.Allwmake

@@ -6,6 +6,8 @@ List<DynamicList<label>> getPhaseCellIndList (volScalarField &alpha1, scalar thr
 // Get field value list based on indices list
 template <typename T>
 List<DynamicList<T>> getFieldValueList (GeometricField<T, fvPatchField, volMesh> &field, List<DynamicList<label>> &CellIndList);
+template <typename T>
+List<DynamicList<T>> getFieldValueList (Field<T> &field, List<DynamicList<label>> &cellIndList);
 
 // Merge all processor values
 template<typename T>
@@ -14,6 +16,10 @@ DynamicList<T> mergeProcessorListValue (List<DynamicList<T>> &fieldValueList);
 // Get average of list values
 template <typename T>
 T getAverageListValue (DynamicList<T> &fullList);
+
+// Get sum of list values
+template <typename T>
+T getSumListValue (DynamicList<T> &fullList);
 
 // Get average of all processor values
 template <typename T>
@@ -37,6 +43,9 @@ vector getInitialPhaseCenter ();
 
 // Get string of parameter value from given setting file and keyword
 string getSettingValue (string settingFilename, string parameterName);
+
+// Output string of parameter value and corresponding setting keyword to given setting file
+void writeSettingValue (string settingFileName, string parameterName, string value);
 
 // Preprocess raindrop file
 void preProcessRaindrop(scalar startTime);
@@ -75,6 +84,22 @@ List<DynamicList<T>> getFieldValueList(GeometricField<T, fvPatchField, volMesh> 
     return fieldValueList;
 }
 
+template <typename T>
+List<DynamicList<T>> getFieldValueList(Field<T> &field, List<DynamicList<label>> &cellIndList)
+{
+    label procNum = Pstream::nProcs();
+    label procCurr = Pstream::myProcNo();
+    List<DynamicList<T>> fieldValueList(procNum);
+    forAll(cellIndList[procCurr], cellIndInd)
+    {    
+        fieldValueList[procCurr].append(field[cellIndList[procCurr][cellIndInd]]);
+        
+    }
+    Pstream::gatherList(fieldValueList);
+    Pstream::scatterList(fieldValueList);
+    return fieldValueList;
+}
+
 template<typename T>
 DynamicList<T> mergeProcessorListValue (List<DynamicList<T>> &fieldValueList)
 {
@@ -96,6 +121,17 @@ T getAverageListValue (DynamicList<T> &fullList)
     	averageProcessorListValue += fullList[fullListInd]/fullListSize;
     }
     return averageProcessorListValue;
+}
+
+template <typename T>
+T getSumListValue (DynamicList<T> &fullList)
+{
+    T sumProcessorListValue = fullList[0]-fullList[0];
+    forAll(fullList, fullListInd)
+    {
+    	sumProcessorListValue += fullList[fullListInd];
+    }
+    return sumProcessorListValue;
 }
 
 template <typename T>
@@ -225,7 +261,7 @@ string getSettingValue (string settingFileName, string parameterName)
             size_t numPos = 0;
             for (size_t linei = 0; linei < line.size(); linei++)
             {
-                if (line[linei] >= '0' && line[linei] <= '9')
+                if ((line[linei] >= '0' && line[linei] <= '9') || line[linei] == '-')
                 {
                     numPos = linei;
                     break;
@@ -243,6 +279,44 @@ string getSettingValue (string settingFileName, string parameterName)
     FatalErrorInFunction << "Can not find parameter " << parameterName << abort(FatalError); 
     return line;
 }          
+
+void writeSettingValue (string settingFileName, string parameterName, string value)
+{
+    std::string line;
+    std::string temp;
+    std::ifstream myfile (settingFileName);
+    bool if_found = false;
+    if (myfile.is_open())
+    {
+        while ( std::getline (myfile,line) )
+        {
+            if (line.find(parameterName)!=0)
+            {
+                temp.append(line.append("\n"));
+            }
+            else
+            {
+                temp.append(parameterName.append("\t").append(value).append(";\n"));
+                if_found = true;
+            }
+        }
+        if (if_found == false)
+        {
+            temp.append("\n");
+            temp.append(parameterName.append("\t").append(value).append(";\n"));            
+        }
+        myfile.close();
+    }
+    else
+    {
+        FatalErrorInFunction << "Can not open file." << abort(FatalError);                       
+    }
+
+    std::ofstream out(settingFileName);
+    out << temp;
+    out.close();
+    
+}  
 
 void preProcessRaindrop(scalar startTime)
 {
