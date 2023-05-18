@@ -2,5 +2,11 @@ raindropFoam dynamically calculate the water phase center and move it to the dom
 
 To setup raindropFoam, modify setAll version number and run ./setAll
 
-For raindropFoam_v9 and raindropFoam_v8, there's only difference in raindropFoam.C
+For raindropFoam_v9 and raindropFoam_v8, the key difference in raindropFoam.C
 v9 replaces "fvOptions.H" in v8 with "fvModels.H"
+
+The v8 is not under active maintanence. v8 can only do "pause and continue run" for single drop in domain center initially.
+
+The updates:
+1. Solve the bug that the "pause and continue" fails when initial drop center not aligns with first token in setFieldsDict
+2. Now caluculate water volume by summing volumes of water cells so it can handle non-uniform mesh

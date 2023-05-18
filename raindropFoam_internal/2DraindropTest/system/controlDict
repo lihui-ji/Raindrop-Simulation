@@ -56,8 +56,8 @@ threshold       0.9;
 
 // ************************************************************************* //
 
-initialRaindropCenterx	0.006194;
+initialRaindropCenterx	-0.000000;
 
-initialRaindropCentery	-0.000000;
+initialRaindropCentery	0.000000;
 
 initialRaindropCenterz	-0.020000;
